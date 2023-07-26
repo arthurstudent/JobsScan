@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/changeset/create-vacancies-table.sql
+  - include:
+      file: db/changelog/changeset/create-labels-table.sql
+  - include:
+      file: db/changelog/changeset/create-locations-table.sql
+  - include:
+      file: db/changelog/changeset/create-vacancies_labels-table.sql
+  - include:
+      file: db/changelog/changeset/create-vacancies_locations-table.sql
