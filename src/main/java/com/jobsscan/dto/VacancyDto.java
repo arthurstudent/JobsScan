@@ -1,7 +1,10 @@
 package com.jobsscan.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.Set;
 
 @Getter
@@ -9,30 +12,42 @@ import java.util.Set;
 @EqualsAndHashCode
 @ToString
 @NoArgsConstructor
-public class VacancyDto {
+public class VacancyDto implements Serializable {
 
+    @NotBlank
+    String publicId;
+
+    @NotNull
     String jobTitle;
 
+    @NotNull
     String companyName;
 
+    @NotNull
     String companyUrl;
 
+    @NotNull
     LocationDto location;
 
-    Set<String> laborFunction;
+    @NotNull
+    Set<LaborFunctionDto> laborFunctions;
 
+    @NotNull
     String logoLink;
 
+    @NotNull
     long postedDate;
 
+    @NotNull
     String description;
 
     public VacancyDto(Builder builder) {
+        this.publicId = builder.publicId;
         this.jobTitle = builder.jobTitle;
         this.companyName = builder.companyName;
         this.companyUrl = builder.companyUrl;
         this.location = builder.location;
-        this.laborFunction = builder.laborFunction;
+        this.laborFunctions = builder.laborFunctions;
         this.logoLink = builder.logoLink;
         this.postedDate = builder.postedDate;
         this.description = builder.description;
@@ -43,6 +58,9 @@ public class VacancyDto {
     }
 
     public static final class Builder {
+
+        String publicId;
+
         String jobTitle;
 
         String companyName;
@@ -51,7 +69,7 @@ public class VacancyDto {
 
         LocationDto location;
 
-        Set<String> laborFunction;
+        Set<LaborFunctionDto> laborFunctions;
 
         String logoLink;
 
@@ -62,6 +80,10 @@ public class VacancyDto {
         private Builder() {
         }
 
+        public Builder publicId(String val) {
+            publicId = val;
+            return this;
+        }
 
         public Builder jobTitle(String val) {
             jobTitle = val;
@@ -83,8 +105,8 @@ public class VacancyDto {
             return this;
         }
 
-        public Builder laborFunction(Set<String> val) {
-            laborFunction = val;
+        public Builder laborFunction(Set<LaborFunctionDto> val) {
+            laborFunctions = val;
             return this;
         }
 

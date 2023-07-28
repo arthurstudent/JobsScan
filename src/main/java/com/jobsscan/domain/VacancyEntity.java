@@ -1,11 +1,10 @@
 package com.jobsscan.domain;
 
 
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,15 +18,14 @@ import java.util.Set;
 @Entity
 @Table(name = "vacancies")
 @Getter
-@Setter
 @NoArgsConstructor
 public class VacancyEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    long id;
+    Long id;
 
-    String vacancyPublicId;
+    @Column(unique = true)
+    String publicId;
 
     String jobTitle;
 
@@ -62,5 +60,41 @@ public class VacancyEntity {
     public void addLabel(LabelEntity labelEntity) {
         labelEntity.getJobs().add(this);
         labels.add(labelEntity);
+    }
+
+    public void setPublicId(String publicId) {
+        this.publicId = publicId;
+    }
+
+    public void setJobTitle(String jobTitle) {
+        this.jobTitle = jobTitle;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+
+    public void setCompanyUrl(String companyUrl) {
+        this.companyUrl = companyUrl;
+    }
+
+    public void setLabels(Set<LabelEntity> labels) {
+        this.labels = labels;
+    }
+
+    public void setLogoLink(String logoLink) {
+        this.logoLink = logoLink;
+    }
+
+    public void setPostedDate(long postedDate) {
+        this.postedDate = postedDate;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setLocations(Set<LocationEntity> locations) {
+        this.locations = locations;
     }
 }

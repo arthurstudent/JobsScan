@@ -1,16 +1,19 @@
 package com.jobsscan.mapper;
 
-import com.jobsscan.domain.LabelEntity;
 import com.jobsscan.domain.LocationEntity;
 import com.jobsscan.domain.VacancyEntity;
+import com.jobsscan.dto.LaborFunctionDto;
 import com.jobsscan.dto.LocationDto;
 import com.jobsscan.dto.VacancyDto;
 import com.jobsscan.exception.ParseDataException;
+import com.jobsscan.utils.GeneratorUtils;
+import com.jobsscan.utils.CustomUtils;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 
@@ -22,80 +25,81 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
+@Getter
 public class VacancyDtoMapper {
 
     private static final String COMA = ",";
 
     private final LocationDtoMapper locationDtoMapper;
 
-    private final ModelMapper modelMapper;
-
-    public VacancyDtoMapper(LocationDtoMapper locationDtoMapper, ModelMapper modelMapper) {
-        this.locationDtoMapper = locationDtoMapper;
-        this.modelMapper = modelMapper;
-    }
+    private final LaborFuncDtoMapper laborFuncDtoMapper;
 
     public List<VacancyDto> fromJobsDocsListToResponseDtosList(List<Document> documents) {
-        return documents.stream().map(this::fromDocumentToVacancyDto)
-                .sorted(Comparator.comparing(VacancyDto::getPostedDate)).toList();
+        return CustomUtils.collectionNullCheck(documents) ? new ArrayList<>() :
+                documents.stream()
+                        .map(doc -> fromDocumentToVacancyDto(doc))
+                        .sorted(Comparator.comparing(VacancyDto::getPostedDate)).toList();
     }
 
     public VacancyDto fromVacancyToVacancyDto(VacancyEntity vacancyEntity) {
 
-        Optional<VacancyDto> optMappedResponseDto = Optional.ofNullable(modelMapper.map(vacancyEntity, VacancyDto.class));
+        var optMappedResponseDto = Optional.ofNullable(new ModelMapper().map(vacancyEntity, VacancyDto.class));
 
         if (optMappedResponseDto.isEmpty()) {
             log.warn("VacancyMapper: Unable to map Vacancy to VacancyDto");
             return new VacancyDto();
         }
 
-        Set<String> labels = vacancyEntity.getLabels()
-                .stream()
-                .map(LabelEntity::getLaborFunction)
+        Set<LaborFunctionDto> laborFunctionDtos = vacancyEntity.getLabels().stream()
+                .map(el-> laborFuncDtoMapper.generalLaborFuncDtoMapper(el, LaborFunctionDto.class))
                 .collect(Collectors.toSet());
 
-        LocationDto location = modelMapper
-                .map(vacancyEntity.getLocations().stream().findFirst().orElseGet(LocationEntity::new), LocationDto.class);
+        var location = locationDtoMapper.generalLocationDtoMapper(vacancyEntity.getLocations()
+                .stream()
+                .findFirst()
+                .orElseGet(LocationEntity::new), LocationDto.class);
 
-        VacancyDto mappedVacancyDto = optMappedResponseDto.get();
+        var mappedVacancyDto = optMappedResponseDto.get();
         mappedVacancyDto.setLocation(location);
-        mappedVacancyDto.setLaborFunction(labels);
+        mappedVacancyDto.setLaborFunctions(laborFunctionDtos);
 
         return mappedVacancyDto;
     }
 
     private VacancyDto fromDocumentToVacancyDto(Document document) {
 
-        Elements elementsByClass = document.getElementsByClass("sc-dmqHEX sc-hLseeU lcnVyb cBWbiv");
+        var elementsByClass = document.getElementsByClass("sc-dmqHEX sc-hLseeU lcnVyb cBWbiv");
 
-        String logoLink = elementsByClass.select("img").attr("src");
-        String companyName = elementsByClass.select("img").attr("alt");
+        var logoLink = elementsByClass.select("img").attr("src");
+        var companyName = elementsByClass.select("img").attr("alt");
 
-        Elements elements = document.getElementsByClass("sc-beqWaB sc-gueYoa dmdAKU MYFxR");
+        var elements = document.getElementsByClass("sc-beqWaB sc-gueYoa dmdAKU MYFxR");
 
-        String laborFunction = elements.select("div > div:nth-child(1)").text();
-        String location = elements.select("div > div:nth-child(2)").text();
+        var laborFunction = elements.select("div > div:nth-child(1)").text();
+        var location = elements.select("div > div:nth-child(2)").text();
 
-        LocationDto locationDto = locationDtoMapper.fromStringToLocationDto(location);
+        var locationDto = locationDtoMapper.fromStringToLocationDto(location);
 
-        String postedDate = elements.select("div > div:nth-child(3)").text();
+        var postedDate = elements.select("div > div:nth-child(3)").text();
         long unixTimesStamp = fromStringToUnixTimesStamp(postedDate);
 
-        String jobTitle = document.getElementsByClass("sc-beqWaB jqWDOR").text();
+        var jobTitle = document.getElementsByClass("sc-beqWaB jqWDOR").text();
 
-        String companyUrl = document.getElementsByClass("sc-beqWaB dqlQzp").select("a").attr("href");
-        String description = String.valueOf(Jsoup.parse(document
+        var companyUrl = document.getElementsByClass("sc-beqWaB dqlQzp").select("a").attr("href");
+        var description = String.valueOf(Jsoup.parse(document
                 .getElementsByClass("sc-beqWaB fmCCHr").html()));
 
         return VacancyDto.builder()
                 .logoLink(logoLink)
                 .companyName(companyName)
-                .laborFunction(split(laborFunction))
+                .laborFunction(laborFuncDtoMapper.toLaborDto(laborFunction))
                 .locationDto(locationDto)
                 .postedDate(unixTimesStamp)
                 .jobTitle(jobTitle)
                 .companyUrl(companyUrl)
                 .description(description)
+                .publicId(GeneratorUtils.generateId())
                 .build();
     }
 
@@ -122,21 +126,15 @@ public class VacancyDtoMapper {
             log.error("VacancyDtoMapper: Unable to parse date to SimpleDateFormat");
             throw new ParseDataException(e.getMessage());
         }
-        Calendar calendar = Calendar.getInstance();
+        var calendar = Calendar.getInstance();
         calendar.setTime(date);
         return calendar.get(Calendar.MONTH);
     }
 
     private long totUnixTime(int year, int month, int day) {
-        Calendar calendar = Calendar.getInstance();
+        var calendar = Calendar.getInstance();
         calendar.set(year, month, day);
-        Date givenDate = calendar.getTime();
+        var givenDate = calendar.getTime();
         return givenDate.toInstant().getEpochSecond();
-    }
-
-    private Set<String> split(String value) {
-        if (value.contains(COMA))
-            return Arrays.stream(value.split(COMA)).collect(Collectors.toSet());
-        return Set.of(value);
     }
 }

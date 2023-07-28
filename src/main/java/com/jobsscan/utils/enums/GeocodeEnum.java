@@ -1,4 +1,4 @@
-package com.jobsscan.utils;
+package com.jobsscan.utils.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,7 +11,7 @@ public enum GeocodeEnum {
     CITY("city"),
     ADDRESS("address"),
     ITEMS("items"),
-    NA("N/A");
+    NA("No Data");
 
     private final String name;
 }

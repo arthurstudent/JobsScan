@@ -14,14 +14,4 @@ public class JobsScanApplication {
         SpringApplication.run(JobsScanApplication.class, args);
     }
 
-    @Bean
-    public Executor asyncExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(1000);
-        executor.setMaxPoolSize(1000);
-        executor.setQueueCapacity(1000);
-        executor.setThreadNamePrefix("Async-");
-        executor.initialize();
-        return executor;
-    }
 }

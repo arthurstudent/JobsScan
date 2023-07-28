@@ -1,4 +1,4 @@
-package com.jobsscan.utils;
+package com.jobsscan.utils.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

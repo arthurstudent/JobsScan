@@ -8,13 +8,10 @@ import lombok.*;
 @EqualsAndHashCode
 @AllArgsConstructor
 @NoArgsConstructor
-public class LocationDto {
+public class LaborFunctionDto {
 
     private String publicId;
 
-    private String country;
+    private String laborFunction;
 
-    private String city;
-
-    private String remote;
 }

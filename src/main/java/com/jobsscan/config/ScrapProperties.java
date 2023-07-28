@@ -14,8 +14,7 @@ import java.util.Map;
 public class ScrapProperties {
 
     @Value("${website.urls}")
-    private String url;
-
+    private String uri;
 
     @Value("${website.jobs}")
     private String jobsPathVariable;

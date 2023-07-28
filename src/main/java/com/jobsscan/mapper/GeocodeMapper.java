@@ -3,39 +3,32 @@ package com.jobsscan.mapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jobsscan.client.GeocodeClient;
 import com.jobsscan.config.GeocoderProperties;
 import com.jobsscan.exception.GeocodeException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
-import static com.jobsscan.utils.GeocodeEnum.ADDRESS;
-import static com.jobsscan.utils.GeocodeEnum.COUNTRY_CODE;
-import static com.jobsscan.utils.GeocodeEnum.CITY;
-import static com.jobsscan.utils.GeocodeEnum.ITEMS;
-import static com.jobsscan.utils.GeocodeEnum.NA;
+import static com.jobsscan.utils.enums.GeocodeEnum.ADDRESS;
+import static com.jobsscan.utils.enums.GeocodeEnum.COUNTRY_CODE;
+import static com.jobsscan.utils.enums.GeocodeEnum.CITY;
+import static com.jobsscan.utils.enums.GeocodeEnum.ITEMS;
+import static com.jobsscan.utils.enums.GeocodeEnum.NA;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class GeocodeMapper {
 
     private final GeocoderProperties geocoderProperties;
 
-    public GeocodeMapper(GeocoderProperties geocoderProperties) {
-        this.geocoderProperties = geocoderProperties;
-    }
+    private final GeocodeClient geocodeClient;
 
     public Map<String, String> getGeocodingResource(String location) {
 
@@ -43,11 +36,12 @@ public class GeocodeMapper {
             return new HashMap<>();
         }
 
-        ObjectMapper mapper = new ObjectMapper();
+        var mapper = new ObjectMapper();
         Map<String, String> geoCodeMap = new HashMap<>();
-        CompletableFuture<HttpResponse<String>> futureResponse = geocodeAsync(location);
+        var futureResponse = geocodeClient.geocodeRequest(location, geocoderProperties.getResource(),
+                geocoderProperties.getApiKey(), "en-US");
 
-        String response = futureResponse.join().body();
+        var response = futureResponse.join().body();
         JsonNode responseJsonNode;
 
         try {
@@ -57,9 +51,9 @@ public class GeocodeMapper {
             throw new GeocodeException(e.getMessage());
         }
 
-        JsonNode item = responseJsonNode.get(ITEMS.getName());
+        var item = responseJsonNode.get(ITEMS.getName());
 
-        Optional<JsonNode> address = Optional.ofNullable(item.get(0).get(ADDRESS.getName()));
+        var address = Optional.ofNullable(item.get(0).get(ADDRESS.getName()));
         if (address.isPresent()) {
             String countryCode = fromNodeToString(address.get(), COUNTRY_CODE.getName());
             String city = fromNodeToString(address.get(), CITY.getName());
@@ -70,27 +64,12 @@ public class GeocodeMapper {
         return geoCodeMap;
     }
 
-    private CompletableFuture<HttpResponse<String>> geocodeAsync(String query) {
-
-        HttpClient httpClient = HttpClient.newHttpClient();
-
-        String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
-        String REQUEST_URI = geocoderProperties.getResource() + "?apiKey=" +
-                geocoderProperties.getApiKey() + "&q=" + encodedQuery + "&lang=en-US";
-
-        HttpRequest geocodingRequest = HttpRequest.newBuilder().GET().uri(URI.create(REQUEST_URI))
-                .timeout(Duration.ofMillis(2000)).build();
-
-        return httpClient.sendAsync(geocodingRequest, HttpResponse.BodyHandlers.ofString());
-    }
-
     private String fromNodeToString(JsonNode jsonNode, String name) {
-        StringBuilder stringBuilder = new StringBuilder();
+        var stringBuilder = new StringBuilder();
 
-        Optional<JsonNode> node = Optional.ofNullable(jsonNode.get(name));
+        var node = Optional.ofNullable(jsonNode.get(name));
         node.ifPresent(el -> stringBuilder.append(el.asText()));
 
         return StringUtils.defaultIfBlank(stringBuilder.toString(), NA.getName());
     }
-
 }
