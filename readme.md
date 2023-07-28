@@ -41,7 +41,7 @@ To run this project, you need to have the following installed:
 Clone the repository to your local machine:
 
 ```bash
-git clone https://github.com/your-username/vacancy-scanner.git
+git clone https://github.com/arthurstudent/JobsScan.git
 ```
 
 
